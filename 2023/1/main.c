@@ -39,6 +39,8 @@ int main(int argc, char** argv) {
     }
 
     printf("%d\n", result);
+
+    return 0;
 }
 
 char read_digit(const char* str) {
