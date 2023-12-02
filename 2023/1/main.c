@@ -1,7 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <stdbool.h>
 #include <string.h>
+
+char* DIGITS[] = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"};
+
+int word_to_digit(const char* str);
 
 int main(int argc, char** argv) {
     int result = 0;
@@ -16,11 +21,23 @@ int main(int argc, char** argv) {
                 linenum[0] = buffer[i];
                 break;
             }
+
+            int digit = word_to_digit(&buffer[i]);
+            if (digit != -1) {
+                linenum[0] = digit + '0';
+                break;
+            }
         }
 
         for (int i = strlen(buffer); i >= 0; i--) {
             if (isdigit(buffer[i])) {
                 linenum[1] = buffer[i];
+                break;
+            }
+
+            int digit = word_to_digit(&buffer[i]);
+            if (digit != -1) {
+                linenum[1] = digit + '0';
                 break;
             }
         }
@@ -29,4 +46,24 @@ int main(int argc, char** argv) {
     }
 
     printf("%d\n", result);
+}
+
+int word_to_digit(const char* str) {
+    for (int digit = 0; digit <= 9; digit++) {
+        bool match = true;
+        char* strdigit = DIGITS[digit];
+
+        for (int i = 0; strdigit[i] != '\0'; i++) {
+            if (str[i] != strdigit[i]) {
+                match = false;
+                break;
+            }
+        }
+
+        if (match) {
+            return digit;
+        }
+    }
+
+    return -1;
 }
