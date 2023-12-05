@@ -24,3 +24,7 @@ struct Point distance(struct Point a, struct Point b) {
 
     return result;
 }
+
+size_t gear_ratio(const struct Gear* gear) {
+    return gear->pair[0].value * gear->pair[1].value;
+}

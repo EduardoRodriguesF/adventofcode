@@ -12,16 +12,14 @@ int main() {
 
     size_t x = 0;
     size_t y = 0;
-    size_t symbols_count = 0;
+    size_t gear_count = 0;
     size_t candidates_count = 0;
     size_t num_length = 0;
 
-    struct Point symbols[bufsize];
-
-    size_t pt_count = 0;
-    size_t part_number_indexes[bufsize];
     struct PartNumber candidates[bufsize];
     struct PartNumber* ptr_candidate = candidates;
+
+    struct Gear gears[bufsize];
 
     while (getline(&line, &bufsize, stdin) > 0) {
         for (int x = 0; line[x] != '\0'; x++) {
@@ -43,9 +41,12 @@ int main() {
                 ptr_candidate++;
             }
 
-            if (line[x] != '.' && line[x] != '\n') {
-                // Symbol
-                symbols[symbols_count++] = new_point(x, y);
+            if (line[x] == '*') {
+                // Gear
+                struct Gear new_gear;
+                new_gear.point = new_point(x, y);
+
+                gears[gear_count++] = new_gear;
                 continue;
             }
         }
@@ -53,32 +54,33 @@ int main() {
         y++;
     }
 
-    struct Point* ptr_symbol;
+    size_t total_ratio = 0;
+    struct Gear* ptr_gear;
     int i, j;
-    for (i = 0, ptr_symbol = symbols; i < symbols_count; i++, ptr_symbol++) {
+    for (i = 0, ptr_gear = gears; i < gear_count; i++, ptr_gear++) {
+        size_t connections = 0;
+
         for (j = 0, ptr_candidate = candidates; j < candidates_count; j++, ptr_candidate++) {
             size_t num_length = count_digits(ptr_candidate->value);
 
-            struct Point diff = distance(ptr_candidate->point, *ptr_symbol);
-            int diffx2 = ptr_symbol->x - (ptr_candidate->point.x + num_length - 1);
+            struct Point diff = distance(ptr_candidate->point, ptr_gear->point);
+            int diffx2 = ptr_gear->point.x - (ptr_candidate->point.x + num_length - 1);
 
             if ((diff.x <= 1 || abs(diffx2) <= 1) && diff.y <= 1) {
-                int r = add_unique(part_number_indexes, pt_count, j);
-                if (r != -1) pt_count++;
+                connections++;
+
+                if (connections > 2) break;
+
+                ptr_gear->pair[connections - 1] = *ptr_candidate;
             }
+        }
+
+        if (connections == 2) {
+            total_ratio += gear_ratio(ptr_gear);
         }
     }
 
-    size_t sum = 0;
-    for (i = 0; i < pt_count; i++) {
-        size_t pt_index =  part_number_indexes[i];
-        struct PartNumber part_number = candidates[pt_index];
-        sum += part_number.value;
-
-        printf("%zu\n", part_number.value);
-    }
-
-    printf("Sum: %zu\n", sum);
+    printf("Total gear ratio: %zu\n", total_ratio);
 
     return 0;
 }
