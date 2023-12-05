@@ -11,9 +11,9 @@ char COLORS[COLORS_SIZE] = { 'r', 'g', 'b' };
 size_t EXPECTED_MAXCOUNT[] = { 12, 13, 14 };
 
 int main() {
-    size_t bufsize, game_id, sum;
+    size_t bufsize, game_id, sum, total_power;
     bufsize = 256;
-    sum = game_id = 0;
+    total_power = sum = game_id = 0;
 
     char* line = malloc(bufsize);
 
@@ -51,17 +51,21 @@ int main() {
         }
 
         bool is_possible = true;
+        size_t power = 1;
         for (int i = 0; i < COLORS_SIZE; i++) {
+            power *= rgb_maxcount[i];
+
             if (rgb_maxcount[i] > EXPECTED_MAXCOUNT[i]) {
                 is_possible = false;
-                break;
             }
         }
 
         if (is_possible) sum += game_id;
+        total_power += power;
     }
 
     printf("Sum of possible Game IDs: %zu\n", sum);
+    printf("Total power: %zu\n", total_power);
 
     return 0;
 }
