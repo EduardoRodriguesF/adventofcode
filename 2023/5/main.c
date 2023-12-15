@@ -5,25 +5,61 @@
 #include <stdbool.h>
 #include <string.h>
 
-size_t translate(size_t seed, char** almanac_lines, size_t n);
+struct AlmanacLine {
+    size_t dest;
+    size_t src;
+    size_t range;
+};
+
+struct AlmanacMap {
+    struct AlmanacLine* instructions;
+    size_t size;
+};
+
+size_t translate(size_t seed, struct AlmanacMap maps[], size_t n);
 
 int main() {
     size_t bufsize = 256;
     char* seed_line = malloc(bufsize);
     char* line = malloc(bufsize);
-    char** lines = malloc(bufsize * sizeof(char*));
-    size_t lines_num = 0;
+
+    struct AlmanacMap maps[bufsize];
+    size_t maps_n = 0;
 
     // Get first line, defining seeds
     if (getline(&seed_line, &bufsize, stdin) == 0) return 1;
     while (!isdigit(*seed_line)) seed_line++;
 
-    while (getline(&line, &bufsize, stdin) > 0) {
-        lines[lines_num] = malloc(bufsize);
-        strcpy(lines[lines_num], line);
+    struct AlmanacMap* map_ptr = maps;
+    map_ptr->instructions = malloc(32 * sizeof(struct AlmanacLine));
+    map_ptr->size = 0;
 
-        lines_num++;
+    while (getline(&line, &bufsize, stdin) > 0) {
+        if (*line == '\n') {
+            if (map_ptr->size > 0) {
+                map_ptr++;
+                maps_n++;
+
+                map_ptr->instructions = malloc(32 * sizeof(struct AlmanacLine));
+                map_ptr->size = 0;
+            }
+            continue;
+        }
+
+        if (isdigit(*line)) {
+            char* saved;
+            struct AlmanacLine instruction;
+
+            instruction.dest = atoi(strtok_r(line, " ", &saved));
+            instruction.src = atoi(strtok_r(NULL, " ", &saved));
+            instruction.range = atoi(strtok_r(NULL, " ", &saved));
+
+            map_ptr->instructions[map_ptr->size++] = instruction;
+        }
+        char* saved;
     }
+
+    maps_n++;
 
     char* saved;
     char* token = strtok_r(seed_line, " ", &saved);
@@ -35,13 +71,13 @@ int main() {
         if ((++i) % 2 != 0) {
             pair_seed = atoi(token);
 
-            size_t seed = translate(pair_seed, lines, lines_num);
+            size_t seed = translate(pair_seed, maps, maps_n);
             if (lowest == 0 || seed < lowest) lowest = seed;
         } else {
             size_t range = atoi(token);
             for (size_t j = 1; j < range; j++) {
                 printf("%zu out of %zu\n", j, range);
-                size_t seed = translate(pair_seed + j, lines, lines_num);
+                size_t seed = translate(pair_seed + j, maps, maps_n);
                 if (seed < lowest) lowest = seed;
             }
         }
@@ -51,34 +87,22 @@ int main() {
 
     printf("Lowest: %zu\n", lowest);
 
-    free(lines);
-    free(line);
     return 0;
 }
 
-size_t translate(size_t seed, char** almanac_lines, size_t n) {
-    bool has_moved = false;
-
-    char* line = malloc(256);
-
+size_t translate(size_t seed, struct AlmanacMap maps[], size_t n) {
     for (size_t i = 0; i < n; i++) {
-        strcpy(line, almanac_lines[i]);
-        char* saved;
+        struct AlmanacMap map = maps[i];
 
-        if (has_moved || !isdigit(*line)) {
-            if (*line == '\n') has_moved = false;
-            continue;
-        }
+        for (size_t j = 0; j < map.size; j++) {
+            struct AlmanacLine line = map.instructions[j];
 
-        size_t dest_start = atoi(strtok_r(line, " ", &saved));
-        size_t src_start = atoi(strtok_r(NULL, " ", &saved));
-        size_t range = atoi(strtok_r(NULL, " ", &saved));
+            size_t src_end = line.src + line.range - 1;
 
-        size_t src_end = src_start + range - 1;
-
-        if (seed >= src_start && seed <= src_end) {
-            seed = dest_start + (seed - src_start);
-            has_moved = true;
+            if (seed >= line.src && seed <= src_end) {
+                seed = line.dest + (seed - line.src);
+                break;
+            }
         }
     }
 
