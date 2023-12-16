@@ -4,24 +4,29 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#include "range.h"
+#include "list.h"
+
+#define SEED_BUFSIZE 1024
 
 struct AlmanacLine {
-    size_t dest;
-    size_t src;
-    size_t range;
+    Range dest;
+    Range src;
 };
 
 struct AlmanacMap {
-    struct AlmanacLine* instructions;
     size_t size;
+    struct AlmanacLine instructions[32];
 };
 
-size_t translate(size_t seed, struct AlmanacMap maps[], size_t n);
+size_t find_lowest_location(Range seed, struct AlmanacMap* maps, size_t maps_n);
 
 int main() {
-    size_t bufsize = 256;
-    char* seed_line = malloc(bufsize);
+    size_t bufsize = SEED_BUFSIZE;
     char* line = malloc(bufsize);
+    char* seed_line = malloc(bufsize);
+    struct Node* seed_ranges = create_node((Range){0,0});
+    size_t seed_count = 0;
 
     struct AlmanacMap maps[bufsize];
     size_t maps_n = 0;
@@ -31,7 +36,6 @@ int main() {
     while (!isdigit(*seed_line)) seed_line++;
 
     struct AlmanacMap* map_ptr = maps;
-    map_ptr->instructions = malloc(32 * sizeof(struct AlmanacLine));
     map_ptr->size = 0;
 
     while (getline(&line, &bufsize, stdin) > 0) {
@@ -39,10 +43,9 @@ int main() {
             if (map_ptr->size > 0) {
                 map_ptr++;
                 maps_n++;
-
-                map_ptr->instructions = malloc(32 * sizeof(struct AlmanacLine));
                 map_ptr->size = 0;
             }
+
             continue;
         }
 
@@ -50,10 +53,12 @@ int main() {
             char* saved;
             struct AlmanacLine instruction;
 
-            instruction.dest = atoi(strtok_r(line, " ", &saved));
-            instruction.src = atoi(strtok_r(NULL, " ", &saved));
-            instruction.range = atoi(strtok_r(NULL, " ", &saved));
+            size_t dest_start = strtoul(strtok_r(line, " ", &saved), NULL, 0);
+            size_t src_start = strtoul(strtok_r(NULL, " ", &saved), NULL, 0);
+            size_t range = strtoul(strtok_r(NULL, " ", &saved), NULL, 0);
 
+            instruction.src = create_range(src_start, src_start + range - 1);
+            instruction.dest = create_range(dest_start, dest_start + range - 1);
             map_ptr->instructions[map_ptr->size++] = instruction;
         }
         char* saved;
@@ -63,48 +68,85 @@ int main() {
 
     char* saved;
     char* token = strtok_r(seed_line, " ", &saved);
-    size_t pair_seed;
-    size_t i = 0;
+    Range range = {0,0};
     size_t lowest = 0;
 
+    size_t i = 0;
     while (token != NULL) {
         if ((++i) % 2 != 0) {
-            pair_seed = atoi(token);
-
-            size_t seed = translate(pair_seed, maps, maps_n);
-            if (lowest == 0 || seed < lowest) lowest = seed;
-        } else {
-            size_t range = atoi(token);
-            for (size_t j = 1; j < range; j++) {
-                printf("%zu out of %zu\n", j, range);
-                size_t seed = translate(pair_seed + j, maps, maps_n);
-                if (seed < lowest) lowest = seed;
-            }
+            range.start = strtoul(token, NULL, 0);
+            token = strtok_r(NULL, " ", &saved);
+            continue;
         }
+
+        range.end = range.start + strtoul(token, NULL, 0) - 1;
+        size_t location = find_lowest_location(range, maps, maps_n);
+        if (lowest == 0 || location < lowest) lowest = location;
 
         token = strtok_r(NULL, " ", &saved);
     }
 
     printf("Lowest: %zu\n", lowest);
+    list_destroy(seed_ranges);
 
     return 0;
 }
 
-size_t translate(size_t seed, struct AlmanacMap maps[], size_t n) {
-    for (size_t i = 0; i < n; i++) {
-        struct AlmanacMap map = maps[i];
+size_t find_lowest_location(Range seed, struct AlmanacMap* maps, size_t maps_n) {
+    Range lower, higher;
+    struct Node* seed_ranges = create_node(seed);
 
-        for (size_t j = 0; j < map.size; j++) {
+    for (int map_index = 0; map_index < maps_n; map_index++) {
+        struct AlmanacMap map = maps[map_index];
+
+        // Reset flags
+        for (struct Node* node = seed_ranges; node != NULL; node = node->next) node->marked = false;
+
+        for (int j = 0; j < map.size; j++) {
             struct AlmanacLine line = map.instructions[j];
 
-            size_t src_end = line.src + line.range - 1;
+            for (struct Node* node = seed_ranges; node != NULL; node = node->next) {
+                if (node->marked) continue;
 
-            if (seed >= line.src && seed <= src_end) {
-                seed = line.dest + (seed - line.src);
-                break;
+                Range src = line.src;
+                Range dest = line.dest;
+
+                Range seed_range = node->value;
+                Range joined = range_joined(seed_range, src);
+
+                if (joined.start == 0 && joined.end == 0) continue;
+
+                range_outer(seed_range, src, &lower, &higher);
+
+                node->marked = true;
+
+                // Save unautered ranges
+                lower = range_joined(lower, node->value);
+                if (lower.start != 0 && lower.end != 0) {
+                    list_push(node, lower);
+                }
+
+                higher = range_joined(higher, node->value);
+                if (higher.start != 0 && higher.end != 0) {
+                    list_push(node, higher);
+                }
+
+                // Commit seed change
+                if (src.start > dest.start) {
+                    node->value.start = (joined.start - src.start) + dest.start;
+                    node->value.end = (joined.end - src.end) + dest.end;
+                } else {
+                    node->value.start = joined.start + (dest.start - src.start);
+                    node->value.end = joined.end + (dest.end - src.end);
+                }
             }
         }
     }
 
-    return seed;
+    size_t lowest = seed_ranges->value.start;
+    for (struct Node* node = seed_ranges->next; node != NULL; node = node->next) {
+        if (node->value.start < lowest) lowest = node->value.start;
+    }
+
+    return lowest;
 }

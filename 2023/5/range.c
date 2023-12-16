@@ -1,13 +1,13 @@
 #include "range.h"
 #include <stdio.h>
 
-Range create_range(int start, int end) {
+Range create_range(size_t start, size_t end) {
     Range range = {start, end};
     return range;
 }
 
 Range range_joined(Range a, Range b) {
-    Range joined = {-1, -1};
+    Range joined = {0, 0};
 
     if (a.start >= b.start && a.start <= b.end) {
         joined.start = a.start;
@@ -25,7 +25,7 @@ Range range_joined(Range a, Range b) {
 }
 
 void range_outer(Range a, Range b, Range* lower, Range* higher) {
-    lower->start = -1;
+    lower->start = 0;
     if (a.start < b.start) {
         lower->start = a.start;
     } else if (a.start > b.start) {
@@ -49,8 +49,8 @@ void range_outer(Range a, Range b, Range* lower, Range* higher) {
             lower->end = b.end;
         }
     } else {
-        lower->start = -1;
-        lower->end = -1;
+        lower->start = 0;
+        lower->end = 0;
     }
 
     if (a.end > b.end) {
@@ -70,7 +70,12 @@ void range_outer(Range a, Range b, Range* lower, Range* higher) {
             higher->end = b.start;
         }
     } else {
-        higher->start = -1;
-        higher->end = -1;
+        higher->start = 0;
+        higher->end = 0;
     }
+}
+
+Range range_group(Range a, Range b, Range* lower, Range* higher) {
+    range_outer(a, b, lower, higher);
+    return range_joined(a, b);
 }
