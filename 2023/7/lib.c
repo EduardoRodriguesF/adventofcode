@@ -1,14 +1,28 @@
 #include "lib.h"
 
-char CARDS[CARDS_LENGTH] = "23456789TJQKA";
+char CARDS[CARDS_LENGTH] = "J23456789TQKA";
 
-int hand_type(char hand[5]) {
+enum Type hand_type(const char hand[5], char joker) {
     enum Type type = HighCard;
     int card_count[CARDS_LENGTH] = { 0 };
 
+    size_t highest_strength = 0;
     for (int i = 0; i < 5; i++) {
         int strength = card_strength(hand[i]);
         card_count[strength]++;
+
+        if (hand[i] != joker && (highest_strength == 0 || card_count[strength] > card_count[highest_strength])) {
+            highest_strength = strength;
+        }
+    }
+
+    if (joker != 0) {
+        // damn it edge case
+        if (card_count[card_strength(joker)] == 5) return FiveOfAKind;
+
+        int joker_strength = card_strength(joker);
+        card_count[highest_strength] += card_count[joker_strength];
+        card_count[joker_strength] -= card_count[joker_strength];
     }
 
     for (int i = 0; i < CARDS_LENGTH; i++) {
@@ -41,9 +55,8 @@ int card_strength(char card) {
 }
 
 enum GameResult play(char pivot[5], char opponent[5]) {
-    enum Type pivot_type = hand_type(pivot);
-    enum Type opponent_type = hand_type(opponent);
-
+    enum Type pivot_type = hand_type(pivot, 'J');
+    enum Type opponent_type = hand_type(opponent, 'J');
     if (pivot_type != opponent_type) return pivot_type > opponent_type ? WIN : LOSE;
 
     for (int i = 0; i < 5; i++) {

@@ -27,7 +27,7 @@ enum GameResult {
     WIN = 1,
 };
 
-int hand_type(char hand[5]);
+enum Type hand_type(const char hand[5], char joker);
 int card_strength(char card);
 enum GameResult play(char pivot[5], char opponent[5]);
 
