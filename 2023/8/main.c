@@ -1,4 +1,6 @@
+#include "lcm.h"
 #include "lib.h"
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,8 +8,6 @@
 
 #define LEFT 'L'
 #define RIGHT 'R'
-#define START "AAA"
-#define GOAL "ZZZ"
 
 int main() {
     size_t bufsize = 512;
@@ -34,25 +34,38 @@ int main() {
     link_locations(linked_locations, weak_locations, n);
     free(weak_locations);
 
-    struct LinkedLocation* ptr = linked_locations;
-    while (strcmp(ptr->coords, START) != 0) ptr++;
-
-    size_t steps = 0;
-    bool reached = false;
-    while (!reached) {
-        for (int i = 0; move_stack[i] != '\0'; i++) {
-            steps++;
-            if (move_stack[i] == LEFT) ptr = ptr->left;
-            else if (move_stack[i] == RIGHT) ptr = ptr->right;
-
-            if (strcmp(GOAL, ptr->coords) == 0) {
-                reached = true;
-                break;
-            }
-        }
+    struct LinkedLocation ghost_locations[bufsize/2];
+    size_t ghost_n = 0;
+    for (int i = 0; i < n; i++) {
+        if (location_is_start(&linked_locations[i])) ghost_locations[ghost_n++] = linked_locations[i];
     }
 
-    printf("%zu\n", steps);
+    size_t required_steps[ghost_n];
+
+    for (int g = 0; g < ghost_n; g++) {
+        struct LinkedLocation* ptr = &ghost_locations[g];
+        int steps = 0;
+        bool reached = false;
+
+        while (!reached) {
+            for (int i = 0; move_stack[i] != '\0'; i++) {
+                if (isspace(move_stack[i])) continue;
+                steps++;
+
+                if (move_stack[i] == LEFT) *ptr = *ptr->left;
+                else if (move_stack[i] == RIGHT) *ptr = *ptr->right;
+
+                if (location_is_goal(ptr)) {
+                    reached = true;
+                    break;
+                }
+            }
+        }
+
+        required_steps[g] = steps;
+    }
+
+    printf("%zu\n", lcm(required_steps, ghost_n));
 
     return 0;
 }

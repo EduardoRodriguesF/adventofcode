@@ -54,3 +54,11 @@ void link_locations(struct LinkedLocation* buffer, struct WeakLocation weak_list
         }
     }
 }
+
+bool location_is_start(struct LinkedLocation* location) {
+    return location->coords[2] == 'A';
+}
+
+bool location_is_goal(struct LinkedLocation* location) {
+    return location->coords[2] == 'Z';
+}
