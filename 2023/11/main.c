@@ -15,17 +15,23 @@
 #include <stdbool.h>
 
 typedef struct {
-    int x, y; 
+    size_t x, y; 
 } Point;
 
 void draw_universe(Point galaxies[], int n, Point size);
-int distance(Point a, Point b);
+size_t distance(Point a, Point b);
 
-int main() {
+int main(int argc, char** argv) {
+    if (argc <= 1) {
+        fprintf(stderr, "Missing expansion argument");
+        return 1;
+    }
+
+    size_t expansion = atoi(argv[1]) - 1;
     size_t bufsize = 1024;
     char* line = malloc(bufsize);
     Point galaxies[bufsize*4];
-    int n = 0;
+    size_t n = 0;
 
     Point size = {0,0};
     while (getline(&line, &bufsize, stdin) > 0) {
@@ -39,10 +45,10 @@ int main() {
     }
 
     // Expand
-    for (int x = 0; x < size.x; x++) {
+    for (size_t x = 0; x < size.x; x++) {
         bool has_galaxy = false;
 
-        for (int i = 0; i < n; i++) {
+        for (size_t i = 0; i < n; i++) {
             if (galaxies[i].x == x) {
                 has_galaxy = true;
                 break;
@@ -50,19 +56,19 @@ int main() {
         }
 
         if (has_galaxy) continue;
-        size.x++;
+        size.x += expansion;
 
-        for (int i = 0; i < n; i++) {
+        for (size_t i = 0; i < n; i++) {
             if (galaxies[i].x < x) continue;
 
-            galaxies[i].x++;
+            galaxies[i].x += expansion;
             
         }
 
-        x++; // skip newly created space 
+        x += expansion; // skip newly created space 
     }
 
-    for (int y = 0; y < size.y; y++) {
+    for (size_t y = 0; y < size.y; y++) {
         bool has_galaxy = false;
 
         for (int i = 0; i < n; i++) {
@@ -73,21 +79,21 @@ int main() {
         }
 
         if (has_galaxy) continue;
-        size.y++;
+        size.y += expansion;
 
         for (int i = 0; i < n; i++) {
             if (galaxies[i].y < y) continue;
 
-            galaxies[i].y++;
+            galaxies[i].y += expansion;
             
         }
 
-        y++; // skip newly created space 
+        y += expansion; // skip newly created space 
     }
 
-    int total_distance = 0;
+    size_t total_distance = 0;
     for (int i = 0; i < n; i++) {
-        for (int j = i+1; j < n; j++) {
+        for (size_t j = i+1; j < n; j++) {
             Point a = galaxies[i];
             Point b = galaxies[j];
 
@@ -95,17 +101,17 @@ int main() {
         }
     }
 
-    printf("%d\n", total_distance);
+    printf("%zu\n", total_distance);
 
     return 0;
 }
 
 void draw_universe(Point galaxies[], int n, Point size) {
-    for (int y = 0; y < size.y; y++) {
-        for (int x = 0; x < size.x; x++) {
+    for (size_t y = 0; y < size.y; y++) {
+        for (size_t x = 0; x < size.x; x++) {
             bool has_galaxy = false;
 
-            for (int i = 0; i < n; i++) {
+            for (size_t i = 0; i < n; i++) {
                 if (galaxies[i].x == x && galaxies[i].y == y) {
                     has_galaxy = true;
                     break;
@@ -120,6 +126,6 @@ void draw_universe(Point galaxies[], int n, Point size) {
     }
 }
 
-int distance(Point a, Point b) {
+size_t distance(Point a, Point b) {
     return (a.x > b.x ? a.x - b.x : b.x - a.x) + (a.y > b.y ? a.y - b.y : b.y - a.y);
 }
