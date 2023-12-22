@@ -3,10 +3,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define MIN(x, y) (x < y ? x : y)
+#define MAX(x, y) (x > y ? x : y)
+
 const struct Point DIRECTIONS[4] = {UP, RIGHT, DOWN, LEFT};
 
-struct Node* find_main_loop(char** data, size_t rows, size_t cols) {
-    struct Node* entry = malloc(sizeof(struct Node));
+int find_main_loop(struct Node* entry, char** data, size_t rows, size_t cols) {
+    int n = 0;
 
     for (int r = 0; r < rows; r++) {
         for (int c = 0; c < cols; c++) {
@@ -16,6 +19,7 @@ struct Node* find_main_loop(char** data, size_t rows, size_t cols) {
                 entry->point.col = c;
                 entry->prev = NULL;
                 entry->next = NULL;
+                n++;
 
                 goto found_entry;
             }
@@ -50,6 +54,7 @@ found_entry:;
                 } else {
                     node = malloc(sizeof(struct Node));
                     memcpy(node, &cmp, sizeof(struct Node));
+                    n++;
                 }
 
                 node->prev = ptr;
@@ -61,7 +66,7 @@ found_entry:;
         ptr = ptr->next;
     } while (ptr->letter != 'S');
 
-    return entry;
+    return n;
 }
 
 bool node_fits(const struct Node* a, const struct Node* b) {
@@ -120,3 +125,49 @@ bool node_fits(const struct Node* a, const struct Node* b) {
 bool point_equals(const struct Point* a, const struct Point* b) {
     return a->row == b->row && a->col == b->col;
 }
+
+int calc_vertices(struct Point buffer[], struct Node* head) {
+    int n = 0;
+
+    do {
+        head = head->next;
+
+        if (head->letter != '-' && head->letter != '|') {
+            if (head->letter != 'S') buffer[n++] = head->point;
+            else {
+                struct Point next_pos = head->next->point;
+                struct Point prev_pos = head->prev->point;
+
+                if (next_pos.row != prev_pos.row && next_pos.col != prev_pos.col) {
+                    buffer[n++] = head->point;
+                }
+            }
+        }
+    } while (head->letter != 'S');
+
+    return n;
+}
+
+bool point_in_polygon(struct Point point, struct Point vertices[], int n) {
+    int counter = 0;
+    struct Point a, b;
+
+    a = vertices[0];
+    for (int i=1;i<=n;i++) {
+        b = vertices[i % n];
+
+        if (
+            point.row > MIN(a.row,b.row)
+            && point.row <= MAX(a.row,b.row)
+            && point.col <= MAX(a.col,b.col)
+            && a.row != b.row
+        ) {
+            int xinters = (point.row-a.row)*(b.col-a.col)/(b.row-a.row)+a.col;
+            if (a.col == b.col || point.col <= xinters) counter++;
+        }
+
+        a = b;
+    }
+
+    return counter % 2 != 0;
+};

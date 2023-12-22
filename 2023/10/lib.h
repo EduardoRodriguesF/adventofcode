@@ -25,8 +25,10 @@ typedef struct {
     struct Node* entry;
 } Map;
 
-struct Node* find_main_loop(char** data, size_t rows, size_t cols);
+int find_main_loop(struct Node* entry, char** data, size_t rows, size_t cols);
 bool node_fits(const struct Node* a, const struct Node* b);
 bool point_equals(const struct Point* a, const struct Point* b);
+int calc_vertices(struct Point buffer[], struct Node* head);
+bool point_in_polygon(struct Point point, struct Point vertices[], int n);
 
 #endif
