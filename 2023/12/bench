@@ -1,0 +1,5 @@
+????#??##.????? 1,5,2
+
+1e6023b > 8.96s (save a few strcpy)
+3d2cb56 > 9.492s (optimized eval_arrangements)
+2f3ef4d > 33.340s
