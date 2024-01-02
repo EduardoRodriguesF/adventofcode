@@ -23,19 +23,35 @@ int main() {
         y++;
     }
 
-    reflect(grid, (Point){-1,0}, Right);
-
-    size_t energy = 0;
-    for (int y = 0; y < grid->h; y++) {
-        for (int x = 0; x < grid->w; x++) {
-            if (grid_at(grid, x, y)->energized) printf("#");
-            else printf(".");
-
-            energy += grid_at(grid, x, y)->energized;
-        }
-
-        printf("\n");
+    size_t r = 0;
+    Point p;
+    for (p = (Point){-1,0}; p.y < grid->h; p.y++) {
+        grid_reset(grid);
+        reflect(grid, p, Right);
+        size_t energy = grid_energy(grid);
+        if (energy > r) r = energy;
     }
 
-    printf("%zu\n", energy);
+    for (p = (Point){-1,grid->w-1}; p.y < grid->h; p.y++) {
+        grid_reset(grid);
+        reflect(grid, p, Left);
+        size_t energy = grid_energy(grid);
+        if (energy > r) r = energy;
+    }
+
+    for (p = (Point){0,-1}; p.x < grid->w; p.x++) {
+        grid_reset(grid);
+        reflect(grid, p, Down);
+        size_t energy = grid_energy(grid);
+        if (energy > r) r = energy;
+    }
+
+    for (p = (Point){grid->w-1,-1}; p.x < grid->w; p.x++) {
+        grid_reset(grid);
+        reflect(grid, p, Up);
+        size_t energy = grid_energy(grid);
+        if (energy > r) r = energy;
+    }
+
+    printf("%zu\n", r);
 }

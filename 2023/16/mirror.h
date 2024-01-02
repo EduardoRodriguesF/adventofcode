@@ -31,6 +31,8 @@ Point point_sum(Point a, Point b);
 Grid* new_grid(size_t w, size_t h);
 Tile* grid_at(Grid* grid, int x, int y);
 void grid_set(Grid* grid, int x, int y, char tile);
+void grid_reset(Grid* grid);
+size_t grid_energy(Grid* grid);
 Direction hit_mirror(Direction dir, char mirror);
 
 void reflect(Grid* grid, Point p, Direction dir);

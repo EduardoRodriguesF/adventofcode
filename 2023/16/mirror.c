@@ -63,6 +63,27 @@ void grid_set(Grid* grid, int x, int y, char tile) {
     grid->rows[y][x] = entry;
 }
 
+void grid_reset(Grid* grid) {
+    for (int y = 0; y < grid->h; y++) {
+        for (int x = 0; x < grid->h; x++) {
+            Tile* tile = grid_at(grid, x, y);
+            tile->passed_dir_bits = 0;
+            tile->energized = false;
+        }
+    }
+}
+
+size_t grid_energy(Grid* grid) {
+    size_t energy = 0;
+    for (int y = 0; y < grid->h; y++) {
+        for (int x = 0; x < grid->w; x++) {
+            energy += grid_at(grid, x, y)->energized;
+        }
+    }
+
+    return energy;
+}
+
 void reflect(Grid* grid, Point p, Direction dir) {
     Tile* tile;
     Point vector = point_vector(dir);
